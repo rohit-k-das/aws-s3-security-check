@@ -7,11 +7,6 @@ def s3_bucket_acl_permissions(profile,s3_client):
     for bucket in bucket_list['Buckets']:
         name = bucket['Name']
         bucket_acl = s3_client.get_bucket_acl(Bucket=name)
-        try:
-            bucket_policy = s3_client.get_bucket_policy(Bucket=name)
-        except Exception as e:
-            if "The bucket policy does not exist" in e.message:
-                bucket_policy = "N/A"
                         
         if 'DisplayName' in bucket_acl['Owner']:
             id_or_name = 'DisplayName'
