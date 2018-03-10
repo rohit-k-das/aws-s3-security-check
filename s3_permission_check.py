@@ -67,7 +67,7 @@ def s3_untouched(s3_client, bucket_name):
 		for object in object_list['Contents']:
 			if last_activity == 'N/A' or last_activity > object['LastModified']:
 				last_activity = object['LastModified']
-		if last_activity < datetime.datetime.now():
+		if last_activity.date() < datetime.datetime.now().date():
 			days = datetime.datetime.now().date() - last_activity.date()
 			if days > 90:
 				print 'Bucket Name: ' + bucket_name
@@ -81,7 +81,15 @@ def s3_encryption_check(s3_client, bucket_name):
 			#print bucket_encryption['ServerSideEncryptionConfiguration']['Rules'][0]
 	except Exception, e:
 		if 'ServerSideEncryptionConfigurationNotFoundError' in e.message:
-			print "Bucket Name:" + bucket_name + ' is unencrypted.'
+			print "Bucket Name:" + bucket_name + ' is unencrypted. Checking objects in bucket ....'
+			object_list = s3_client.list_objects_v2(Bucket=bucket_name)
+			if 'Contents' in object_list:
+				for object in object_list['Contents']:
+					key = object['Key']
+					object_metadata = s3_client.head_object(Bucket=bucket_name, Key=key)
+					if 'ServerSideEncryption' not in object_metadata:
+						print "Object " + key + " is unencrypted."
+						print
 		else:
 			print e.message
 
@@ -97,14 +105,16 @@ def object_acl_check(s3_client, bucket_name):
 	if 'Contents' in object_list:
 		for object in object_list['Contents']:
 			object_Owner = object['Owner']['DisplayName']
-			key = object['Owner']['Key']
+			key = object['Key']
 			object_acl = s3_client.get_object_acl(Bucket=bucket_name, Key=key)
-			for grant in object['Grants']:
-				if 'global/AuthenticatedUsers' in grant['Grantee']['URI'] or 'global/AllUsers' in grant['Grantee']['URI']:
-					print 'Object: ' + object['Key']
-					print 'Owner : ' + object_Owner
-					print 'Object is open to the world'
-					print
+			for grant in object_acl['Grants']:
+				if grant['Grantee']['Type'] == 'Group':
+					if 'global/AuthenticatedUsers' in grant['Grantee']['URI'] or 'global/AllUsers' in grant['Grantee']['URI']:
+						print 'Object: ' + object['Key']
+						print 'Owner : ' + object_Owner
+						print 'Object is open to the world'
+						print
+				
 	else:
 		print 'Found empty bucket ' + bucket_name + '.'
 
@@ -151,15 +161,14 @@ def main():
 		print
 		session = boto3.session.Session(profile_name = profile)
 		s3_client = session.client('s3')
-		
 		try:
 			bucket_list = s3_client.list_buckets()
 			print "\t\t\tBUCKET ACL CHECK"
 			print "\t\t\t----------------"
 			for bucket in bucket_list['Buckets']:
 				s3_bucket_acl_check(s3_client, bucket['Name'])
-				object_acl_check(s3_client, bucket['Name'])
-	   		print
+				object_acl_check(s3_client, bucket['Name'])			
+			print
 			print "\t\t\tBUCKET ENCRYPTION CHECK"
 			print "\t\t\t-----------------------"
 			for bucket in bucket_list['Buckets']:
@@ -186,7 +195,8 @@ def main():
 				print 'ERROR: Insufficient permissions to access S3 buckets for account ' + profile + '.'
 			else:
 				print e.message	
-	  	
+
+	   			  	
 if __name__ == '__main__':
 	main()
 
