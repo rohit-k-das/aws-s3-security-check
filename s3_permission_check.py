@@ -176,7 +176,7 @@ def main():
 			if 'AccessDenied' in e.message:
 				print 'ERROR: Insufficient permissions to access S3 buckets for account ' + profile + '.'
 			else:
-				print e.message	
+				print 'ERROR: ' + e.message	
 
 	   			  	
 if __name__ == '__main__':
