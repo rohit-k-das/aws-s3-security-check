@@ -15,22 +15,7 @@ def s3_bucket_acl_check(s3_client, bucket_name):
 	bucket_owner = bucket_acl['Owner'][id_or_name]
 
 	for grant in bucket_acl['Grants']:
-		'''
-		if grant['Grantee']['Type'] == "CanonicalUser":
-			if bucket_owner != grant['Grantee'][id_or_name]:
-				user = grant['Grantee'][id_or_name]
-				if user not in Permissions:
-					Permissions[user] = []
-				Permissions[user].append(grant['Permission'])
-		'''
 		if grant['Grantee']['Type'] == "Group":
-			'''
-			if "global/AuthenticatedUsers" not in grant['Grantee']['URI'] and "global/AllUsers" not in grant['Grantee']['URI'] and "s3/LogDelivery" not in grant['Grantee']['URI']:
-				user = grant['Grantee']['URI']
-				if user not in Permissions:
-					Permissions[user] = []
-				Permissions[user].append(grant['Permission'])
-			'''
 			if "global/AuthenticatedUsers" in grant['Grantee']['URI']:
 				user = "Any AWS user"
 				if user not in Permissions:
@@ -76,9 +61,6 @@ def s3_untouched(s3_client, bucket_name):
 def s3_encryption_check(s3_client, bucket_name):
 	try:
 		bucket_encryption = s3_client.get_bucket_encryption(Bucket=bucket_name)
-		#if 'ApplyServerSideEncryptionByDefault' in bucket_encryption['ServerSideEncryptionConfiguration']['Rules'][0]:
-			#print "Bucket Name:" + name
-			#print bucket_encryption['ServerSideEncryptionConfiguration']['Rules'][0]
 	except Exception, e:
 		if 'ServerSideEncryptionConfigurationNotFoundError' in e.message:
 			print "Bucket Name:" + bucket_name + ' is unencrypted. Checking objects in bucket ....'
