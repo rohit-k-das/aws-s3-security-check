@@ -1,5 +1,4 @@
-# aws-s3-permission-check
-Non-compliance in S3 buckets across AWS accounts/profiles.
+# S3 Security Check across AWS accounts/profile
 
 The python script checks for:
 1. World readable/aws readable permissions in bucket ACLs
